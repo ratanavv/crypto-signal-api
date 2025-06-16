@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 SECRET_TOKEN = "u82Ds7BxrT2p4F9vKQy8FvPe"
 
-def fetch_top_volume_pairs(limit=50):
+def fetch_top_volume_pairs(limit=10):
     binance = ccxt.binance()
     tickers = binance.fetch_tickers()
     filtered = []
