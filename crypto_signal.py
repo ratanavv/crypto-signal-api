@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from flask import Flask, jsonify, request, abort
 import os
+import gc
 
 app = Flask(__name__)
 
@@ -22,7 +23,7 @@ def fetch_top_volume_pairs(limit=10):
 
 def get_ema_bb_signals(pair):
     binance = ccxt.binance()
-    ohlcv = binance.fetch_ohlcv(pair, timeframe='1h', limit=210)
+    ohlcv = binance.fetch_ohlcv(pair, timeframe='1h', limit=201)
     df = pd.DataFrame(ohlcv, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
 
     if len(df) < 201:
@@ -37,6 +38,9 @@ def get_ema_bb_signals(pair):
     last = df.iloc[-1]
     crossed_ema = (last['close'] > last['ema200']) != (df.iloc[-2]['close'] > df.iloc[-2]['ema200'])
     near_bb = last['close'] >= last['bb_upper'] or last['close'] <= last['bb_lower']
+
+    del df
+    gc.collect()
 
     if crossed_ema or near_bb:
         return {
@@ -63,6 +67,7 @@ def check_signals():
                 results.append(result)
         except Exception as e:
             print(f"Error processing {pair}: {e}")
+        gc.collect()
     return jsonify(results)
 
 if __name__ == '__main__':
