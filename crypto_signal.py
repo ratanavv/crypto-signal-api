@@ -11,17 +11,23 @@ SECRET_TOKEN = "u82Ds7BxrT2p4F9vKQy8FvPe"
 def fetch_top_volume_pairs(limit=50):
     binance = ccxt.binance()
     tickers = binance.fetch_tickers()
-    sorted_pairs = sorted(
-        [t for t in tickers.values() if t['quote'] == 'USDT' and '/USDT' in t['symbol']],
-        key=lambda x: x['quoteVolume'],
-        reverse=True
-    )
+    filtered = []
+
+    for t in tickers.values():
+        if 'symbol' in t and '/USDT' in t['symbol'] and isinstance(t.get('quoteVolume'), (int, float)):
+            filtered.append(t)
+
+    sorted_pairs = sorted(filtered, key=lambda x: x['quoteVolume'], reverse=True)
     return [t['symbol'] for t in sorted_pairs[:limit]]
 
 def get_ema_bb_signals(pair):
     binance = ccxt.binance()
     ohlcv = binance.fetch_ohlcv(pair, timeframe='1h', limit=210)
     df = pd.DataFrame(ohlcv, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+
+    if len(df) < 201:
+        return None
+
     df['ema200'] = df['close'].ewm(span=200).mean()
     df['bb_mid'] = df['close'].rolling(window=200).mean()
     df['bb_std'] = df['close'].rolling(window=200).std()
@@ -60,4 +66,5 @@ def check_signals():
     return jsonify(results)
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
