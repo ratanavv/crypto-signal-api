@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: crypto-signal-api
+    env: python
+    buildCommand: ""
+    startCommand: python crypto_signal.py
+    plan: free
